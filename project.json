@@ -1,0 +1,180 @@
+{
+	"contentrating" : "Everyone",
+	"description" : "A digital clock showing auto-located Islamic prayer times, Hijri calendar, and next prayer countdown.",
+	"file" : "index.html",
+	"general" : 
+	{
+		"properties" : 
+		{
+			"asr_school" : 
+			{
+				"index" : 4,
+				"options" : 
+				[
+					{
+						"label" : "Default",
+						"value" : "default"
+					},
+					{
+						"label" : "Standard",
+						"value" : "shafi"
+					},
+					{
+						"label" : "Hanafi",
+						"value" : "hanafi"
+					}
+				],
+				"order" : 104,
+				"text" : "Asr",
+				"type" : "combo",
+				"value" : "default"
+			},
+			"bg_color" : 
+			{
+				"index" : 7,
+				"order" : 107,
+				"text" : "Color",
+				"type" : "color",
+				"value" : "0.11 0.11 0.16"
+			},
+			"calculation_method" : 
+			{
+				"index" : 3,
+				"options" : 
+				[
+					{
+						"label" : "Default",
+						"value" : "default"
+					},
+					{
+						"label" : "Umm Al-Qura",
+						"value" : "ummAlQura"
+					},
+					{
+						"label" : "Gulf",
+						"value" : "gulf"
+					},
+					{
+						"label" : "Egypt",
+						"value" : "egypt"
+					},
+					{
+						"label" : "Karachi",
+						"value" : "karachi"
+					},
+					{
+						"label" : "Turkey",
+						"value" : "turkey"
+					},
+					{
+						"label" : "Morocco",
+						"value" : "morocco"
+					},
+					{
+						"label" : "Southeast Asia",
+						"value" : "jakim"
+					},
+					{
+						"label" : "ISNA",
+						"value" : "isna"
+					},
+					{
+						"label" : "Russia",
+						"value" : "russia"
+					},
+					{
+						"label" : "France",
+						"value" : "france"
+					},
+					{
+						"label" : "Tehran",
+						"value" : "tehran"
+					},
+					{
+						"label" : "MWL",
+						"value" : "mwl"
+					}
+				],
+				"order" : 103,
+				"text" : "Method",
+				"type" : "combo",
+				"value" : "default"
+			},
+			"hijri_offset" : 
+			{
+				"condition" : "show_hijri.value === true",
+				"index" : 6,
+				"max" : 2,
+				"min" : -2,
+				"order" : 106,
+				"step" : 1,
+				"text" : "Hijri Offset",
+				"type" : "slider",
+				"value" : 0
+			},
+			"language" : 
+			{
+				"index" : 0,
+				"options" : 
+				[
+					{
+						"label" : "English",
+						"value" : "en"
+					},
+					{
+						"label" : "Arabic",
+						"value" : "ar"
+					}
+				],
+				"order" : 100,
+				"text" : "Language",
+				"type" : "combo",
+				"value" : "en"
+			},
+			"schemecolor" : 
+			{
+				"order" : 0,
+				"text" : "ui_browse_properties_scheme_color",
+				"type" : "color",
+				"value" : "0 0 0"
+			},
+			"show_hijri" : 
+			{
+				"index" : 5,
+				"order" : 105,
+				"text" : "Hijri",
+				"type" : "bool",
+				"value" : true
+			},
+			"use_12h" : 
+			{
+				"index" : 1,
+				"order" : 101,
+				"text" : "12-Hour",
+				"type" : "bool",
+				"value" : true
+			},
+			"widget_scale" : 
+			{
+				"index" : 2,
+				"max" : 1.5,
+				"min" : 0.5,
+				"order" : 102,
+				"step" : 0.05,
+				"text" : "Size",
+				"type" : "slider",
+				"value" : 1
+			}
+		}
+	},
+	"preview" : "preview.gif",
+	"ratingsex" : "none",
+	"ratingviolence" : "none",
+	"tags" : [ "Relaxing" ],
+	"title" : "Prayer Times & Clock",
+	"type" : "web",
+	"version" : 1,
+	"visibility" : "public",
+	"workshopid" : "3760221363",
+	"workshopurl" : "steam://url/CommunityFilePage/3760221363"
+}

@@ -1,0 +1,1090 @@
+<!-- made by: @k_aljalood -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Prayer Times & Clock</title>
+  <style>
+    @property --bg-color-1 {
+      syntax: '<color>';
+      inherits: false;
+      initial-value: rgb(28, 28, 41);
+    }
+    @property --bg-color-2 {
+      syntax: '<color>';
+      inherits: false;
+      initial-value: rgb(6, 6, 8);
+    }
+    :root {
+      --text-color: #ffffff;
+      --target-opacity-clock: 1;
+      --target-opacity-date: 0.85;
+      --text-shadow-clock: 0 4px 20px rgba(0, 0, 0, 0.35);
+      --text-shadow-date: 0 2px 10px rgba(0, 0, 0, 0.35);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+      background: linear-gradient(180deg, var(--bg-color-1) 0%, var(--bg-color-2) 100%);
+    }
+    .grabbing {
+      cursor: grabbing !important;
+    }
+    .container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      width: fit-content;
+      max-width: 95%;
+      cursor: grab;
+    }
+    .date-display {
+      font-size: clamp(1.2rem, 1.8vw, 2.2rem);
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.01em;
+      color: var(--text-color);
+      opacity: var(--target-opacity-date);
+      text-shadow: var(--text-shadow-date);
+    }
+    .clock-display {
+      font-size: clamp(6rem, 11vw, 14rem);
+      font-weight: 700;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      color: var(--text-color);
+      opacity: var(--target-opacity-clock);
+      text-shadow: var(--text-shadow-clock);
+    }
+    .colon {
+      position: relative;
+      top: -0.1em;
+      margin: 0 0.01em;
+    }
+    .location-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 1.5rem;
+      color: var(--text-color);
+      opacity: 0.85;
+      font-size: clamp(1rem, 1.4vw, 1.6rem);
+      font-weight: 500;
+    }
+    #refresh-btn {
+      background: none;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: inherit;
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease;
+    }
+    #refresh-btn:hover {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    #refresh-btn.disabled {
+      opacity: 0.25 !important;
+      pointer-events: none;
+      transform: scale(1) !important;
+    }
+    #refresh-btn svg {
+      width: 1.2rem;
+      height: 1.2rem;
+      fill: currentColor;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .spinning {
+      animation: spin 1s linear infinite;
+    }
+    .countdown-display {
+      font-size: clamp(0.9rem, 1.2vw, 1.4rem);
+      font-weight: 500;
+      color: var(--text-color);
+      opacity: 0.8;
+      text-shadow: var(--text-shadow-date);
+      margin-top: 0.4rem;
+    }
+    .prayer-widget {
+      margin-top: 2rem;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      width: 680px;
+      max-width: 100%;
+    }
+    .prayer-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 4px;
+      opacity: 0.45;
+    }
+    .prayer-item.active {
+      opacity: 1;
+    }
+    .prayer-name {
+      font-size: clamp(0.75rem, 0.95vw, 1rem);
+      font-weight: 600;
+      margin-bottom: 4px;
+      letter-spacing: 0.02em;
+      color: var(--text-color);
+      text-shadow: var(--text-shadow-date);
+    }
+    .prayer-item.active .prayer-name {
+      font-weight: 700;
+    }
+    .prayer-time {
+      font-size: clamp(0.8rem, 1.1vw, 1.25rem);
+      font-weight: 500;
+      color: var(--text-color);
+      text-shadow: var(--text-shadow-date);
+    }
+    .prayer-item.active .prayer-time {
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="date" class="date-display"></div>
+    <div id="clock" class="clock-display"></div>
+    <div class="location-header" id="location-header">
+      <span id="city-name">--</span>
+      <button id="refresh-btn" onclick="manualRefresh()">
+        <svg viewBox="0 0 24 24" id="refresh-icon">
+          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+      </button>
+    </div>
+    <div id="countdown" class="countdown-display"></div>
+    <div class="prayer-widget" id="prayer-widget">
+      <div class="prayer-item" id="p-fajr">
+        <div class="prayer-name" id="name-fajr"></div>
+        <div class="prayer-time" id="time-fajr">--:--</div>
+      </div>
+      <div class="prayer-item" id="p-sunrise">
+        <div class="prayer-name" id="name-sunrise"></div>
+        <div class="prayer-time" id="time-sunrise">--:--</div>
+      </div>
+      <div class="prayer-item" id="p-dhuhr">
+        <div class="prayer-name" id="name-dhuhr"></div>
+        <div class="prayer-time" id="time-dhuhr">--:--</div>
+      </div>
+      <div class="prayer-item" id="p-asr">
+        <div class="prayer-name" id="name-asr"></div>
+        <div class="prayer-time" id="time-asr">--:--</div>
+      </div>
+      <div class="prayer-item" id="p-maghrib">
+        <div class="prayer-name" id="name-maghrib"></div>
+        <div class="prayer-time" id="time-maghrib">--:--</div>
+      </div>
+      <div class="prayer-item" id="p-isha">
+        <div class="prayer-name" id="name-isha"></div>
+        <div class="prayer-time" id="time-isha">--:--</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let currentLanguage = 'en';
+    let showHijri = true;
+    let use12h = true;
+    let selectedMethod = 'default';
+    let selectedAsr = 'default';
+    let hijriOffset = 0;
+
+    let lastLang = '';
+
+    let isRefreshCooldown = false;
+    let retryTimeoutId = null;
+
+    const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    const weekdaysAr = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
+    const weekdaysEn = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const gregMonthsAr = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+    const gregMonthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const hijriMonthsAr = ["محرم", "صفر", "ربيع الأول", "ربيع الثاني", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"];
+    const hijriMonthsEn = ["Mhrm.", "Sfr.", "Rab. I", "Rab. II", "Jum. I", "Jum. II", "Raj.", "Sha.", "Ram.", "Shaw.", "Dhu'l-Q", "Dhu'l-H"];
+
+    const prayerNamesEn = {
+      fajr: 'Fajr',
+      sunrise: 'Sunrise',
+      dhuhr: 'Dhuhr',
+      asr: 'Asr',
+      maghrib: 'Maghrib',
+      isha: 'Isha'
+    };
+
+    const prayerNamesAr = {
+      fajr: 'الفجر',
+      sunrise: 'الشروق',
+      dhuhr: 'الظهر',
+      asr: 'العصر',
+      maghrib: 'المغرب',
+      isha: 'العشاء'
+    };
+
+    let locationData = null;
+    let isFetchingLocation = false;
+
+    let defaultLocation = {
+      latitude: "24.7136",
+      longitude: "46.6753",
+      country: "SA",
+      city: "Riyadh",
+      cityAr: "الرياض"
+    };
+
+    function getMethodConfig(country) {
+      let method = selectedMethod;
+      let c = (country || 'MWL').toUpperCase();
+
+      if (method === 'default') {
+        const ummAlQura = ['SA', 'YE'];
+        const gulf = ['AE', 'KW', 'QA', 'OM', 'BH'];
+        const egypt = ['EG', 'SD', 'LY', 'TN', 'DZ', 'SY', 'LB', 'JO', 'PS', 'IQ', 'SO', 'DJ', 'KM', 'ER', 'TD', 'NE', 'ML', 'MR'];
+        const karachi = ['PK', 'IN', 'BD', 'AF', 'LK', 'MV', 'UZ', 'TJ', 'TM', 'KG', 'KZ'];
+        const turkey = ['TR', 'AZ', 'AL', 'BA', 'XK', 'MK', 'CY'];
+        const morocco = ['MA'];
+        const jakim = ['MY', 'ID', 'SG', 'BN', 'TH', 'PH', 'VN', 'KH', 'MM', 'LA'];
+        const isna = ['US', 'CA', 'MX', 'BR', 'AR', 'CO', 'PE', 'VE', 'CL', 'EC', 'GT', 'CU', 'HT', 'DO', 'HN', 'PY', 'UY', 'PA', 'JM', 'CR', 'SV', 'NI', 'GQ', 'BS', 'BZ', 'BO', 'GY', 'SR', 'GF', 'FK'];
+        const russia = ['RU', 'UA', 'BY', 'MD', 'EE', 'LV', 'LT'];
+        const france = ['FR', 'LU'];
+        const tehran = ['IR'];
+
+        if (ummAlQura.includes(c)) {
+          method = 'ummAlQura';
+        } else if (gulf.includes(c)) {
+          method = 'gulf';
+        } else if (egypt.includes(c)) {
+          method = 'egypt';
+        } else if (karachi.includes(c)) {
+          method = 'karachi';
+        } else if (turkey.includes(c)) {
+          method = 'turkey';
+        } else if (morocco.includes(c)) {
+          method = 'morocco';
+        } else if (jakim.includes(c)) {
+          method = 'jakim';
+        } else if (isna.includes(c)) {
+          method = 'isna';
+        } else if (russia.includes(c)) {
+          method = 'russia';
+        } else if (france.includes(c)) {
+          method = 'france';
+        } else if (tehran.includes(c)) {
+          method = 'tehran';
+        } else {
+          method = 'mwl';
+        }
+      }
+
+      let config;
+      if (method === 'ummAlQura') {
+        config = { type: 'ummAlQura', fajr: 18.5, isha: 'fixed_90_120', asrFactor: 1 };
+      } else if (method === 'gulf') {
+        config = { type: 'gulf', fajr: 18.2, isha: 18, asrFactor: 1 };
+      } else if (method === 'egypt') {
+        config = { type: 'egypt', fajr: 19.5, isha: 17.5, asrFactor: 1 };
+      } else if (method === 'karachi') {
+        config = { type: 'karachi', fajr: 18, isha: 18, asrFactor: 2 };
+      } else if (method === 'turkey') {
+        config = { type: 'turkey', fajr: 18, isha: 17, asrFactor: 2 };
+      } else if (method === 'morocco') {
+        config = { type: 'morocco', fajr: 19, isha: 17, asrFactor: 1 };
+      } else if (method === 'jakim') {
+        config = { type: 'jakim', fajr: 20, isha: 18, asrFactor: 1 };
+      } else if (method === 'isna') {
+        config = { type: 'isna', fajr: 15, isha: 15, asrFactor: 1 };
+      } else if (method === 'russia') {
+        config = { type: 'russia', fajr: 16, isha: 15, asrFactor: 2 };
+      } else if (method === 'france') {
+        config = { type: 'france', fajr: 12, isha: 12, asrFactor: 1 };
+      } else if (method === 'tehran') {
+        config = { type: 'tehran', fajr: 17.7, isha: 14, asrFactor: 1 };
+      } else {
+        config = { type: 'mwl', fajr: 18, isha: 17, asrFactor: 1 };
+      }
+
+      if (selectedAsr !== 'default') {
+        config.asrFactor = (selectedAsr === 'hanafi') ? 2 : 1;
+      }
+
+      return config;
+    }
+
+    function getUmmAlQuraMonth(dateObj) {
+      try {
+        const parts = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', {
+          month: 'numeric'
+        }).formatToParts(dateObj);
+        for (let part of parts) {
+          if (part.type === 'month') return parseInt(part.value, 10);
+        }
+      } catch (e) {}
+      return 0;
+    }
+
+    function toArabicNumerals(num) {
+      return String(num).replace(/[0-9]/g, w => arabicDigits[+w]);
+    }
+
+    function parseColor(weColor) {
+      if (!weColor) return [28, 28, 40];
+      let parts = weColor.split(' ');
+      if (parts.length === 3) {
+        let r = Math.round(parseFloat(parts[0]) * 255);
+        let g = Math.round(parseFloat(parts[1]) * 255);
+        let b = Math.round(parseFloat(parts[2]) * 255);
+        return [r, g, b];
+      }
+      return [28, 28, 40];
+    }
+
+    function getLuminance(r, g, b) {
+      let a = [r, g, b].map(v => {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+    }
+
+    function safeGetItem(key, fallback) {
+      try {
+        let val = localStorage.getItem('k_aljalood_prayer_times_clock_' + key);
+        return val !== null ? val : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function safeSetItem(key, val) {
+      try {
+        localStorage.setItem('k_aljalood_prayer_times_clock_' + key, val);
+      } catch (e) {}
+    }
+
+    function applyBgColor(colorVal) {
+      let rgb = parseColor(colorVal);
+      let r1 = rgb[0];
+      let g1 = rgb[1];
+      let b1 = rgb[2];
+
+      let r1_grad = r1;
+      let g1_grad = g1;
+      let b1_grad = b1;
+      if (r1 < 15 && g1 < 15 && b1 < 15) {
+        r1_grad = 24;
+        g1_grad = 24;
+        b1_grad = 28;
+      }
+
+      let r2 = Math.round(r1 * 0.2);
+      let g2 = Math.round(g1 * 0.2);
+      let b2 = Math.round(b1 * 0.2);
+
+      document.body.style.setProperty('--bg-color-1', `rgb(${r1_grad}, ${g1_grad}, ${b1_grad})`);
+      document.body.style.setProperty('--bg-color-2', `rgb(${r2}, ${g2}, ${b2})`);
+
+      let l = getLuminance(r1_grad, g1_grad, b1_grad);
+      if (l > 0.45) {
+        document.documentElement.style.setProperty('--text-color', '#1c1c1e');
+        document.documentElement.style.setProperty('--target-opacity-clock', '0.95');
+        document.documentElement.style.setProperty('--target-opacity-date', '0.75');
+        document.documentElement.style.setProperty('--text-shadow-clock', '0 4px 20px rgba(0, 0, 0, 0.08)');
+        document.documentElement.style.setProperty('--text-shadow-date', '0 2px 10px rgba(0, 0, 0, 0.08)');
+      } else {
+        document.documentElement.style.setProperty('--text-color', '#ffffff');
+        document.documentElement.style.setProperty('--target-opacity-clock', '1');
+        document.documentElement.style.setProperty('--target-opacity-date', '0.85');
+        document.documentElement.style.setProperty('--text-shadow-clock', '0 4px 20px rgba(0, 0, 0, 0.35)');
+        document.documentElement.style.setProperty('--text-shadow-date', '0 2px 10px rgba(0, 0, 0, 0.35)');
+      }
+    }
+
+    function getJulianDate(year, month, day) {
+      if (month <= 2) {
+        year -= 1;
+        month += 12;
+      }
+      let A = Math.floor(year / 100);
+      let B = 2 - A + Math.floor(A / 4);
+      return Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + B - 1524.5;
+    }
+
+    function fixangle(a) {
+      a = a - 360 * Math.floor(a / 360);
+      return a < 0 ? a + 360 : a;
+    }
+
+    function fixhour(h) {
+      h = h - 24 * Math.floor(h / 24);
+      return h < 0 ? h + 24 : h;
+    }
+
+    function dsin(d) { return Math.sin(d * Math.PI / 180); }
+    function dcos(d) { return Math.cos(d * Math.PI / 180); }
+    function dtan(d) { return Math.tan(d * Math.PI / 180); }
+    function darcsin(r) { return Math.asin(r) * 180 / Math.PI; }
+    function darccos(r) { return Math.acos(r) * 180 / Math.PI; }
+    function darctan2(y, x) { return Math.atan2(y, x) * 180 / Math.PI; }
+
+    function sunPosition(jd) {
+      let D = jd - 2451545.0;
+      let g = fixangle(357.529 + 0.98560028 * D);
+      let q = fixangle(280.459 + 0.98564736 * D);
+      let L = fixangle(q + 1.915 * dsin(g) + 0.020 * dsin(2 * g));
+      let e = 23.439 - 0.00000036 * D;
+      let d = darcsin(dsin(e) * dsin(L));
+      let RA = darctan2(dcos(e) * dsin(L), dcos(L)) / 15;
+      RA = fixangle(RA * 15) / 15;
+      let EqT = q / 15 - RA;
+      if (EqT < -12) EqT += 24;
+      if (EqT > 12) EqT -= 24;
+      return { declination: d, equationOfTime: EqT };
+    }
+
+    function hourAngle(lat, decl, alt) {
+      let cosH = (dsin(alt) - dsin(lat) * dsin(decl)) / (dcos(lat) * dcos(decl));
+      if (cosH > 1 || cosH < -1) return null;
+      return darccos(cosH) / 15;
+    }
+
+    function asrAltitude(lat, decl, factor = 1) {
+      let diff = Math.abs(lat - decl);
+      let alt = Math.atan(1 / (factor + dtan(diff)));
+      return alt * 180 / Math.PI;
+    }
+
+    function calculatePrayers(lat, lng, offset, country, dateObj) {
+      let year = dateObj.getFullYear();
+      let month = dateObj.getMonth() + 1;
+      let day = dateObj.getDate();
+      let jd = getJulianDate(year, month, day);
+      let sun = sunPosition(jd);
+      let decl = sun.declination;
+      let EqT = sun.equationOfTime;
+      
+      let noon = 12 + offset - lng / 15 - EqT;
+      noon = fixhour(noon);
+      
+      const config = getMethodConfig(country);
+      
+      let fajrAngle = config.fajr;
+      let ishaAngle = typeof config.isha === 'number' ? config.isha : 17;
+      let asrFactor = config.asrFactor;
+      
+      let H_fajr = hourAngle(lat, decl, -fajrAngle);
+      let H_sunrise = hourAngle(lat, decl, -0.833);
+      let H_sunset = hourAngle(lat, decl, -0.833);
+      
+      let asrAlt = asrAltitude(lat, decl, asrFactor);
+      let H_asr = hourAngle(lat, decl, asrAlt);
+      
+      let sunrise = fixhour(noon - H_sunrise);
+      let sunset = fixhour(noon + H_sunset);
+      
+      let fajr, maghrib, isha;
+      let isHighLat = Math.abs(lat) > 48;
+      
+      if (H_fajr === null) {
+        if (isHighLat) {
+          let nightDuration = (sunrise < sunset) ? (sunrise + 24 - sunset) : (sunrise - sunset);
+          fajr = fixhour(sunrise - (nightDuration / 7));
+        } else {
+          fajr = fixhour(noon - 5);
+        }
+      } else {
+        fajr = fixhour(noon - H_fajr);
+      }
+      
+      if (config.type === 'tehran') {
+        let H_maghrib = hourAngle(lat, decl, -4.5);
+        if (H_maghrib !== null) {
+          maghrib = fixhour(noon + H_maghrib);
+        } else {
+          maghrib = sunset;
+        }
+      } else {
+        maghrib = sunset;
+      }
+      
+      if (config.type === 'ummAlQura') {
+        let isRamadan = (getUmmAlQuraMonth(dateObj) === 9);
+        let ishaOffset = isRamadan ? 2 : 1.5;
+        isha = fixhour(maghrib + ishaOffset);
+      } else {
+        let H_isha = hourAngle(lat, decl, -ishaAngle);
+        if (H_isha === null) {
+          if (isHighLat) {
+            let nightDuration = (sunrise < sunset) ? (sunrise + 24 - sunset) : (sunrise - sunset);
+            isha = fixhour(sunset + (nightDuration / 7));
+          } else {
+            isha = fixhour(noon + 5);
+          }
+        } else {
+          isha = fixhour(noon + H_isha);
+        }
+      }
+      
+      let dhuhr = fixhour(noon + 2 / 60);
+      let asr = fixhour(noon + H_asr);
+      
+      return { fajr, sunrise, dhuhr, asr, maghrib, isha };
+    }
+
+    function formatTime(decimalHours) {
+      if (decimalHours === null || isNaN(decimalHours)) return '--:--';
+      let h = Math.floor(decimalHours);
+      let m = Math.round((decimalHours - h) * 60);
+      if (m === 60) {
+        h += 1;
+        m = 0;
+      }
+      h = fixhour(h);
+      
+      if (use12h) {
+        let suffix = h >= 12 ? ' PM' : ' AM';
+        if (currentLanguage === 'ar') {
+          suffix = h >= 12 ? ' م' : ' ص';
+        }
+        h = h % 12;
+        h = h ? h : 12;
+        let hStr = String(h);
+        let mStr = String(m).padStart(2, '0');
+        if (currentLanguage === 'ar') {
+          hStr = toArabicNumerals(hStr);
+          mStr = toArabicNumerals(mStr);
+        }
+        return `${hStr}:${mStr}${suffix}`;
+      } else {
+        let hStr = String(h).padStart(2, '0');
+        let mStr = String(m).padStart(2, '0');
+        if (currentLanguage === 'ar') {
+          hStr = toArabicNumerals(hStr);
+          mStr = toArabicNumerals(mStr);
+        }
+        return `${hStr}:${mStr}`;
+      }
+    }
+
+    function setRefreshSpinning(spin) {
+      const icon = document.getElementById('refresh-icon');
+      if (icon) {
+        if (spin) {
+          icon.classList.add('spinning');
+        } else {
+          icon.classList.remove('spinning');
+        }
+      }
+    }
+
+    function fetchLocation() {
+      if (isFetchingLocation) return;
+
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+        retryTimeoutId = null;
+      }
+
+      isFetchingLocation = true;
+      setRefreshSpinning(true);
+
+      fetch('https://geoip.k-aljalood.com')
+        .then(res => {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.latitude && data.longitude) {
+            safeSetItem('geo_location', JSON.stringify(data));
+            applyLocation(data);
+            isFetchingLocation = false;
+            setRefreshSpinning(false);
+          } else {
+            throw new Error();
+          }
+        })
+        .catch(() => {
+          isFetchingLocation = false;
+          setRefreshSpinning(false);
+          retryTimeoutId = setTimeout(fetchLocation, 11000);
+        });
+    }
+
+    function applyLocation(data) {
+      locationData = data;
+      update();
+    }
+
+    function manualRefresh() {
+      if (isRefreshCooldown) return;
+
+      isRefreshCooldown = true;
+      const btn = document.getElementById('refresh-btn');
+      if (btn) btn.classList.add('disabled');
+
+      fetchLocation();
+
+      setTimeout(() => {
+        isRefreshCooldown = false;
+        if (btn) btn.classList.remove('disabled');
+      }, 11000);
+    }
+
+    function getCountdownText(times, now) {
+      let currentMinutes = now.getHours() * 60 + now.getMinutes();
+      let prayerNames = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
+      let activeIndex = -1;
+      
+      let prayerMinutes = prayerNames.map(name => {
+        let t = times[name];
+        return Math.round(t * 60);
+      });
+      
+      for (let i = 0; i < prayerNames.length; i++) {
+        if (currentMinutes < prayerMinutes[i]) {
+          activeIndex = i;
+          break;
+        }
+      }
+      if (activeIndex === -1) {
+        activeIndex = 0;
+      }
+
+      let targetMinutes = 0;
+      let nextPrayerKey = '';
+      
+      if (currentMinutes < prayerMinutes[prayerMinutes.length - 1]) {
+        targetMinutes = prayerMinutes[activeIndex];
+        nextPrayerKey = prayerNames[activeIndex];
+      } else {
+        let tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        let offset = -now.getTimezoneOffset() / 60;
+        let country = locationData ? locationData.country : 'SA';
+        let lat = locationData ? parseFloat(locationData.latitude) : 24.7136;
+        let lng = locationData ? parseFloat(locationData.longitude) : 46.6753;
+        let tomTimes = calculatePrayers(lat, lng, offset, country, tomorrow);
+        targetMinutes = Math.round(tomTimes.fajr * 60) + 24 * 60;
+        nextPrayerKey = 'fajr';
+      }
+
+      let diff = targetMinutes - currentMinutes;
+      let diffH = Math.floor(diff / 60);
+      let diffM = diff % 60;
+
+      let localizedNextName = currentLanguage === 'ar' ? prayerNamesAr[nextPrayerKey] : prayerNamesEn[nextPrayerKey];
+      let countdownText = '';
+      
+      let hStr = String(diffH);
+      let mStr = String(diffM);
+      if (currentLanguage === 'ar') {
+        hStr = toArabicNumerals(hStr);
+        mStr = toArabicNumerals(mStr);
+        if (diffH > 0) {
+          countdownText = `${localizedNextName} بعد ${hStr}س و ${mStr}د`;
+        } else {
+          countdownText = `${localizedNextName} بعد ${mStr}د`;
+        }
+      } else {
+        if (diffH > 0) {
+          countdownText = `${localizedNextName} in ${hStr}h ${mStr}m`;
+        } else {
+          countdownText = `${localizedNextName} in ${mStr}m`;
+        }
+      }
+      return countdownText;
+    }
+
+    function updateActivePrayer(times) {
+      let now = new Date();
+      let currentMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      let prayerNames = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
+      let activeIndex = -1;
+      
+      let prayerMinutes = prayerNames.map(name => {
+        let t = times[name];
+        return Math.round(t * 60);
+      });
+      
+      for (let i = 0; i < prayerNames.length; i++) {
+        if (currentMinutes < prayerMinutes[i]) {
+          activeIndex = i;
+          break;
+        }
+      }
+      if (activeIndex === -1) {
+        activeIndex = 0;
+      }
+      
+      prayerNames.forEach((name, idx) => {
+        let el = document.getElementById(`p-${name}`);
+        if (el) {
+          if (idx === activeIndex) {
+            el.classList.add('active');
+          } else {
+            el.classList.remove('active');
+          }
+        }
+      });
+    }
+
+    function update() {
+      const now = new Date();
+
+      let hours = now.getHours();
+      let suffix = '';
+      if (use12h) {
+        let isPM = hours >= 12;
+        let suffixText = isPM ? 'PM' : 'AM';
+        if (currentLanguage === 'ar') {
+          suffixText = isPM ? 'م' : 'ص';
+        }
+        suffix = `<span style="font-size: 0.35em; font-weight: 500; margin-left: 0.15em; margin-right: 0.15em; vertical-align: middle;">${suffixText}</span>`;
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+      }
+
+      let hoursStrLocal = use12h ? String(hours) : String(hours).padStart(2, '0');
+      let minutesStrLocal = String(now.getMinutes()).padStart(2, '0');
+
+      if (currentLanguage === 'ar') {
+        hoursStrLocal = toArabicNumerals(hoursStrLocal);
+        minutesStrLocal = toArabicNumerals(minutesStrLocal);
+      }
+
+      let timeHTML = `${hoursStrLocal}<span class="colon">:</span>${minutesStrLocal}${suffix}`;
+      let dateText = '';
+
+      if (currentLanguage === 'ar') {
+        let gDay = toArabicNumerals(now.getDate());
+        let gMonth = gregMonthsAr[now.getMonth()];
+        let gWeekday = weekdaysAr[now.getDay()];
+
+        if (showHijri) {
+          try {
+            let hijriDate = new Date(now);
+            hijriDate.setDate(hijriDate.getDate() + hijriOffset);
+            const hijriParts = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', {
+              day: 'numeric',
+              month: 'numeric',
+              year: 'numeric'
+            }).formatToParts(hijriDate);
+
+            let hDayNum = 1;
+            let hMonthNum = 1;
+            let hYearNum = 1448;
+
+            for (let part of hijriParts) {
+              if (part.type === 'day') hDayNum = parseInt(part.value, 10);
+              if (part.type === 'month') hMonthNum = parseInt(part.value, 10);
+              if (part.type === 'year') hYearNum = parseInt(part.value, 10);
+            }
+
+            let hDay = toArabicNumerals(hDayNum);
+            let hMonth = hijriMonthsAr[hMonthNum - 1];
+            let hYear = toArabicNumerals(hYearNum);
+
+            dateText = `${hDay} ${hMonth}، ${hYear} هـ · ${gWeekday} ${gDay} ${gMonth}`;
+          } catch (e) {
+            dateText = `${gWeekday} ${gDay} ${gMonth}`;
+          }
+        } else {
+          dateText = `${gWeekday} ${gDay} ${gMonth}`;
+        }
+      } else {
+        let gDay = now.getDate();
+        let gMonth = gregMonthsEn[now.getMonth()];
+        let gWeekday = weekdaysEn[now.getDay()];
+
+        if (showHijri) {
+          try {
+            let hijriDate = new Date(now);
+            hijriDate.setDate(hijriDate.getDate() + hijriOffset);
+            const hijriParts = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', {
+              day: 'numeric',
+              month: 'numeric',
+              year: 'numeric'
+            }).formatToParts(hijriDate);
+
+            let hDay = 1;
+            let hMonthNum = 1;
+            let hYear = 1448;
+
+            for (let part of hijriParts) {
+              if (part.type === 'day') hDay = parseInt(part.value, 10);
+              if (part.type === 'month') hMonthNum = parseInt(part.value, 10);
+              if (part.type === 'year') hYear = parseInt(part.value, 10);
+            }
+
+            let hMonth = hijriMonthsEn[hMonthNum - 1];
+
+            dateText = `${gWeekday} ${gDay} ${gMonth} · ${hDay} ${hMonth} ${hYear} AH`;
+          } catch (e) {
+            dateText = `${gWeekday} ${gDay} ${gMonth}`;
+          }
+        } else {
+          dateText = `${gWeekday} ${gDay} ${gMonth}`;
+        }
+      }
+
+      let currentClockHTML = document.getElementById('clock').innerHTML;
+      if (timeHTML !== currentClockHTML) {
+        document.getElementById('clock').innerHTML = timeHTML;
+      }
+
+      let currentDateText = document.getElementById('date').innerText;
+      if (dateText !== currentDateText) {
+        document.getElementById('date').innerText = dateText;
+      }
+
+      if (locationData) {
+        let lat = parseFloat(locationData.latitude);
+        let lng = parseFloat(locationData.longitude);
+        let offset = -now.getTimezoneOffset() / 60;
+        let country = locationData.country;
+        
+        let cityName = currentLanguage === 'ar' ? (locationData.cityAr || locationData.city || '') : (locationData.city || '');
+
+        let countryName = country;
+        try {
+          const regionNames = new Intl.DisplayNames([currentLanguage], { type: 'region' });
+          countryName = regionNames.of(country) || country;
+        } catch (e) {}
+
+        let separator = cityName ? (currentLanguage === 'ar' ? '، ' : ', ') : '';
+        let fullLocationStr = `${cityName}${separator}${countryName}`;
+
+        let pTimes = calculatePrayers(lat, lng, offset, country, now);
+        let countdownText = getCountdownText(pTimes, now);
+
+        document.getElementById('city-name').innerText = fullLocationStr;
+        document.getElementById('countdown').innerText = countdownText;
+
+        if (currentLanguage !== lastLang) {
+          let pNames = currentLanguage === 'ar' ? prayerNamesAr : prayerNamesEn;
+          for (let key in pNames) {
+            let nameEl = document.getElementById(`name-${key}`);
+            if (nameEl) nameEl.innerText = pNames[key];
+          }
+        }
+
+        let pKeys = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
+        pKeys.forEach(key => {
+          let newTimeStr = formatTime(pTimes[key]);
+          let el = document.getElementById(`time-${key}`);
+          if (el) {
+            let currentTimeStr = el.innerText;
+            if (newTimeStr !== currentTimeStr) {
+              el.innerText = newTimeStr;
+            }
+          }
+        });
+
+        updateActivePrayer(pTimes);
+      }
+
+      document.querySelector('.container').style.opacity = '1';
+      lastLang = currentLanguage;
+    }
+
+    window.wallpaperPropertyListener = {
+      applyUserProperties: function(properties) {
+        if (properties.language) {
+          currentLanguage = properties.language.value;
+          safeSetItem('language', currentLanguage);
+          document.documentElement.lang = currentLanguage;
+          document.body.style.direction = currentLanguage === 'ar' ? 'rtl' : 'ltr';
+        }
+
+        if (properties.bg_color) {
+          let colorVal = properties.bg_color.value;
+          safeSetItem('bg_color', colorVal);
+          applyBgColor(colorVal);
+        }
+
+        if (properties.use_12h) {
+          use12h = properties.use_12h.value;
+          safeSetItem('use_12h', use12h ? 'true' : 'false');
+        }
+        if (properties.show_hijri) {
+          showHijri = properties.show_hijri.value;
+          safeSetItem('show_hijri', showHijri ? 'true' : 'false');
+        }
+        if (properties.hijri_offset) {
+          hijriOffset = properties.hijri_offset.value;
+          safeSetItem('hijri_offset', hijriOffset);
+        }
+        if (properties.calculation_method) {
+          selectedMethod = properties.calculation_method.value;
+          safeSetItem('calculation_method', selectedMethod);
+        }
+        if (properties.asr_school) {
+          selectedAsr = properties.asr_school.value;
+          safeSetItem('asr_school', selectedAsr);
+        }
+        if (properties.widget_scale) {
+          widgetScale = properties.widget_scale.value;
+          safeSetItem('widget_scale', widgetScale);
+          checkDragBounds();
+        }
+
+        update();
+      }
+    };
+
+    let cachedLanguage = safeGetItem('language', 'en');
+    let cachedShowHijri = safeGetItem('show_hijri', 'true');
+    let cachedBgColor = safeGetItem('bg_color', '0.11 0.11 0.16');
+    let cachedUse12h = safeGetItem('use_12h', 'true');
+    let cachedMethod = safeGetItem('calculation_method', 'default');
+    let cachedAsr = safeGetItem('asr_school', 'default');
+    let cachedHijriOffset = parseInt(safeGetItem('hijri_offset', '0'), 10);
+    let widgetScale = parseFloat(safeGetItem('widget_scale', '1.0'));
+
+    currentLanguage = cachedLanguage;
+    showHijri = cachedShowHijri === 'true';
+    use12h = cachedUse12h === 'true';
+    selectedMethod = cachedMethod;
+    selectedAsr = cachedAsr;
+    hijriOffset = cachedHijriOffset;
+
+    document.documentElement.lang = currentLanguage;
+    document.body.style.direction = currentLanguage === 'ar' ? 'rtl' : 'ltr';
+    applyBgColor(cachedBgColor);
+
+    const container = document.querySelector('.container');
+    let dragX = parseFloat(safeGetItem('drag_x', '0'));
+    let dragY = parseFloat(safeGetItem('drag_y', '0'));
+    container.style.transform = `translate(calc(-50% + ${dragX}px), calc(-50% + ${dragY}px)) scale(${widgetScale})`;
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let initialDragX = 0;
+    let initialDragY = 0;
+    let limitX = 0;
+    let limitY = 0;
+
+    function startDrag(clientX, clientY) {
+      const containerWidth = container.offsetWidth * widgetScale;
+      const containerHeight = container.offsetHeight * widgetScale;
+      limitX = Math.max(0, (window.innerWidth - containerWidth) / 2);
+      limitY = Math.max(0, (window.innerHeight - containerHeight) / 2);
+
+      isDragging = true;
+      startX = clientX;
+      startY = clientY;
+      initialDragX = dragX;
+      initialDragY = dragY;
+      document.body.classList.add('grabbing');
+    }
+
+    function moveDrag(clientX, clientY) {
+      if (!isDragging) return;
+      let dx = clientX - startX;
+      let dy = clientY - startY;
+
+      let newDragX = initialDragX + dx;
+      let newDragY = initialDragY + dy;
+
+      if (newDragX < -limitX) newDragX = -limitX;
+      if (newDragX > limitX) newDragX = limitX;
+      if (newDragY < -limitY) newDragY = -limitY;
+      if (newDragY > limitY) newDragY = limitY;
+
+      dragX = newDragX;
+      dragY = newDragY;
+      container.style.transform = `translate(calc(-50% + ${dragX}px), calc(-50% + ${dragY}px)) scale(${widgetScale})`;
+    }
+
+    function stopDrag() {
+      if (isDragging) {
+        isDragging = false;
+        document.body.classList.remove('grabbing');
+        safeSetItem('drag_x', dragX);
+        safeSetItem('drag_y', dragY);
+      }
+    }
+
+    function checkDragBounds() {
+      const containerWidth = container.offsetWidth * widgetScale;
+      const containerHeight = container.offsetHeight * widgetScale;
+      const limitX = Math.max(0, (window.innerWidth - containerWidth) / 2);
+      const limitY = Math.max(0, (window.innerHeight - containerHeight) / 2);
+      if (dragX < -limitX) dragX = -limitX;
+      if (dragX > limitX) dragX = limitX;
+      if (dragY < -limitY) dragY = -limitY;
+      if (dragY > limitY) dragY = limitY;
+      container.style.transform = `translate(calc(-50% + ${dragX}px), calc(-50% + ${dragY}px)) scale(${widgetScale})`;
+    }
+
+    document.body.addEventListener('mousedown', (e) => {
+      if (e.target.closest('#refresh-btn')) return;
+      if (!e.target.closest('.container')) return;
+      startDrag(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      moveDrag(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('mouseup', stopDrag);
+
+    document.body.addEventListener('touchstart', (e) => {
+      if (e.target.closest('#refresh-btn')) return;
+      if (!e.target.closest('.container')) return;
+      if (e.touches.length > 0) {
+        startDrag(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', stopDrag);
+    window.addEventListener('resize', checkDragBounds);
+
+    let savedLoc = safeGetItem('geo_location', null);
+    if (savedLoc) {
+      applyLocation(JSON.parse(savedLoc));
+    } else {
+      applyLocation(defaultLocation);
+      fetchLocation();
+    }
+
+    update();
+    setInterval(update, 1000);
+  </script>
+</body>
+</html>
