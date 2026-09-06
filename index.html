@@ -36,6 +36,25 @@
       user-select: none;
       background: linear-gradient(180deg, var(--bg-color-1) 0%, var(--bg-color-2) 100%);
     }
+    .bg-media {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .bg-media-element {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
     .grabbing {
       cursor: grabbing !important;
     }
@@ -52,6 +71,7 @@
       width: fit-content;
       max-width: 95%;
       cursor: grab;
+      z-index: 1;
     }
     .date-display {
       font-size: clamp(1.2rem, 1.8vw, 2.2rem);
@@ -86,6 +106,7 @@
       opacity: 0.85;
       font-size: clamp(1rem, 1.4vw, 1.6rem);
       font-weight: 500;
+      text-shadow: var(--text-shadow-date);
     }
     #refresh-btn {
       background: none;
@@ -171,6 +192,10 @@
   </style>
 </head>
 <body>
+  <div class="bg-media">
+    <img id="bg-image" class="bg-media-element" alt="" />
+    <video id="bg-video" class="bg-media-element" autoplay loop muted playsinline></video>
+  </div>
   <div class="container">
     <div id="date" class="date-display"></div>
     <div id="clock" class="clock-display"></div>
@@ -217,6 +242,12 @@
     let selectedMethod = 'default';
     let selectedAsr = 'default';
     let hijriOffset = 0;
+    let bgType = 'color';
+    let bgColor = '0.11 0.11 0.16';
+    let textColor = '1 1 1';
+    let textShadow = true;
+    let customImage = '';
+    let customVideo = '';
 
     let lastLang = '';
 
@@ -355,7 +386,7 @@
     }
 
     function parseColor(weColor) {
-      if (!weColor) return [28, 28, 40];
+      if (!weColor) return [255, 255, 255];
       let parts = weColor.split(' ');
       if (parts.length === 3) {
         let r = Math.round(parseFloat(parts[0]) * 255);
@@ -363,15 +394,7 @@
         let b = Math.round(parseFloat(parts[2]) * 255);
         return [r, g, b];
       }
-      return [28, 28, 40];
-    }
-
-    function getLuminance(r, g, b) {
-      let a = [r, g, b].map(v => {
-        v /= 255;
-        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-      });
-      return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+      return [255, 255, 255];
     }
 
     function safeGetItem(key, fallback) {
@@ -390,7 +413,9 @@
     }
 
     function applyBgColor(colorVal) {
-      let rgb = parseColor(colorVal);
+      bgColor = colorVal || '0.11 0.11 0.16';
+      safeSetItem('bg_color', bgColor);
+      let rgb = parseColor(bgColor);
       let r1 = rgb[0];
       let g1 = rgb[1];
       let b1 = rgb[2];
@@ -410,20 +435,72 @@
 
       document.body.style.setProperty('--bg-color-1', `rgb(${r1_grad}, ${g1_grad}, ${b1_grad})`);
       document.body.style.setProperty('--bg-color-2', `rgb(${r2}, ${g2}, ${b2})`);
+    }
 
-      let l = getLuminance(r1_grad, g1_grad, b1_grad);
-      if (l > 0.45) {
-        document.documentElement.style.setProperty('--text-color', '#1c1c1e');
-        document.documentElement.style.setProperty('--target-opacity-clock', '0.95');
-        document.documentElement.style.setProperty('--target-opacity-date', '0.75');
-        document.documentElement.style.setProperty('--text-shadow-clock', '0 4px 20px rgba(0, 0, 0, 0.08)');
-        document.documentElement.style.setProperty('--text-shadow-date', '0 2px 10px rgba(0, 0, 0, 0.08)');
-      } else {
-        document.documentElement.style.setProperty('--text-color', '#ffffff');
-        document.documentElement.style.setProperty('--target-opacity-clock', '1');
-        document.documentElement.style.setProperty('--target-opacity-date', '0.85');
+    function updateTextStyle() {
+      let rgb = parseColor(textColor);
+      let r = rgb[0];
+      let g = rgb[1];
+      let b = rgb[2];
+      document.documentElement.style.setProperty('--text-color', `rgb(${r}, ${g}, ${b})`);
+
+      if (textShadow) {
         document.documentElement.style.setProperty('--text-shadow-clock', '0 4px 20px rgba(0, 0, 0, 0.35)');
         document.documentElement.style.setProperty('--text-shadow-date', '0 2px 10px rgba(0, 0, 0, 0.35)');
+      } else {
+        document.documentElement.style.setProperty('--text-shadow-clock', 'none');
+        document.documentElement.style.setProperty('--text-shadow-date', 'none');
+      }
+      document.documentElement.style.setProperty('--target-opacity-clock', '1');
+      document.documentElement.style.setProperty('--target-opacity-date', '0.85');
+    }
+
+    function formatFilePath(src) {
+      if (!src) return '';
+      if (!src.startsWith('file:///') && !src.startsWith('http://') && !src.startsWith('https://')) {
+        return 'file:///' + src.replace(/\\/g, '/');
+      }
+      return src;
+    }
+
+    function updateBackground() {
+      const img = document.getElementById('bg-image');
+      const vid = document.getElementById('bg-video');
+
+      if (bgType === 'image' && customImage) {
+        if (vid) {
+          vid.pause();
+          vid.removeAttribute('src');
+          vid.style.display = 'none';
+        }
+        if (img) {
+          img.src = formatFilePath(customImage);
+          img.style.display = 'block';
+        }
+      } else if (bgType === 'video' && customVideo) {
+        if (img) {
+          img.removeAttribute('src');
+          img.style.display = 'none';
+        }
+        if (vid) {
+          const src = formatFilePath(customVideo);
+          if (vid.src !== src) {
+            vid.src = src;
+            vid.load();
+          }
+          vid.style.display = 'block';
+          vid.play().catch(function() {});
+        }
+      } else {
+        if (img) {
+          img.removeAttribute('src');
+          img.style.display = 'none';
+        }
+        if (vid) {
+          vid.pause();
+          vid.removeAttribute('src');
+          vid.style.display = 'none';
+        }
       }
     }
 
@@ -552,7 +629,7 @@
         }
       }
       
-      let dhuhr = fixhour(noon + 2 / 60);
+      let dhuhr = noon;
       let asr = fixhour(noon + H_asr);
       
       return { fajr, sunrise, dhuhr, asr, maghrib, isha };
@@ -924,10 +1001,38 @@
           document.body.style.direction = currentLanguage === 'ar' ? 'rtl' : 'ltr';
         }
 
+        if (properties.bg_type) {
+          bgType = properties.bg_type.value;
+          safeSetItem('bg_type', bgType);
+          updateBackground();
+        }
+
         if (properties.bg_color) {
-          let colorVal = properties.bg_color.value;
-          safeSetItem('bg_color', colorVal);
-          applyBgColor(colorVal);
+          applyBgColor(properties.bg_color.value);
+        }
+
+        if (properties.custom_image) {
+          customImage = properties.custom_image.value;
+          safeSetItem('custom_image', customImage);
+          updateBackground();
+        }
+
+        if (properties.custom_video) {
+          customVideo = properties.custom_video.value;
+          safeSetItem('custom_video', customVideo);
+          updateBackground();
+        }
+
+        if (properties.text_color) {
+          textColor = properties.text_color.value;
+          safeSetItem('text_color', textColor);
+          updateTextStyle();
+        }
+
+        if (properties.text_shadow) {
+          textShadow = properties.text_shadow.value;
+          safeSetItem('text_shadow', textShadow ? 'true' : 'false');
+          updateTextStyle();
         }
 
         if (properties.use_12h) {
@@ -957,17 +1062,32 @@
         }
 
         update();
+      },
+      setPaused: function(isPaused) {
+        const vid = document.getElementById('bg-video');
+        if (vid && vid.style.display === 'block') {
+          if (isPaused) {
+            vid.pause();
+          } else {
+            vid.play().catch(function() {});
+          }
+        }
       }
     };
 
     let cachedLanguage = safeGetItem('language', 'en');
     let cachedShowHijri = safeGetItem('show_hijri', 'true');
     let cachedBgColor = safeGetItem('bg_color', '0.11 0.11 0.16');
+    let cachedTextColor = safeGetItem('text_color', '1 1 1');
+    let cachedTextShadow = safeGetItem('text_shadow', 'true');
     let cachedUse12h = safeGetItem('use_12h', 'true');
     let cachedMethod = safeGetItem('calculation_method', 'default');
     let cachedAsr = safeGetItem('asr_school', 'default');
     let cachedHijriOffset = parseInt(safeGetItem('hijri_offset', '0'), 10);
     let widgetScale = parseFloat(safeGetItem('widget_scale', '1.0'));
+    let cachedBgType = safeGetItem('bg_type', 'color');
+    let cachedCustomImage = safeGetItem('custom_image', '');
+    let cachedCustomVideo = safeGetItem('custom_video', '');
 
     currentLanguage = cachedLanguage;
     showHijri = cachedShowHijri === 'true';
@@ -975,10 +1095,18 @@
     selectedMethod = cachedMethod;
     selectedAsr = cachedAsr;
     hijriOffset = cachedHijriOffset;
+    bgType = cachedBgType;
+    bgColor = cachedBgColor;
+    textColor = cachedTextColor;
+    textShadow = cachedTextShadow === 'true';
+    customImage = cachedCustomImage;
+    customVideo = cachedCustomVideo;
 
     document.documentElement.lang = currentLanguage;
     document.body.style.direction = currentLanguage === 'ar' ? 'rtl' : 'ltr';
     applyBgColor(cachedBgColor);
+    updateBackground();
+    updateTextStyle();
 
     const container = document.querySelector('.container');
     let dragX = parseFloat(safeGetItem('drag_x', '0'));
@@ -992,6 +1120,21 @@
     let initialDragY = 0;
     let limitX = 0;
     let limitY = 0;
+    let lastClickTime = 0;
+    let lastClickX = 0;
+    let lastClickY = 0;
+
+    function resetPosition() {
+      dragX = 0;
+      dragY = 0;
+      safeSetItem('drag_x', 0);
+      safeSetItem('drag_y', 0);
+      container.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+      container.style.transform = `translate(calc(-50% + ${dragX}px), calc(-50% + ${dragY}px)) scale(${widgetScale})`;
+      setTimeout(() => {
+        container.style.transition = '';
+      }, 300);
+    }
 
     function startDrag(clientX, clientY) {
       const containerWidth = container.offsetWidth * widgetScale;
@@ -1049,6 +1192,17 @@
     document.body.addEventListener('mousedown', (e) => {
       if (e.target.closest('#refresh-btn')) return;
       if (!e.target.closest('.container')) return;
+
+      const currentTime = Date.now();
+      if (currentTime - lastClickTime < 400 && Math.abs(e.clientX - lastClickX) < 15 && Math.abs(e.clientY - lastClickY) < 15) {
+        lastClickTime = 0;
+        resetPosition();
+        return;
+      }
+      lastClickTime = currentTime;
+      lastClickX = e.clientX;
+      lastClickY = e.clientY;
+
       startDrag(e.clientX, e.clientY);
     });
 
@@ -1062,7 +1216,17 @@
       if (e.target.closest('#refresh-btn')) return;
       if (!e.target.closest('.container')) return;
       if (e.touches.length > 0) {
-        startDrag(e.touches[0].clientX, e.touches[0].clientY);
+        const touch = e.touches[0];
+        const currentTime = Date.now();
+        if (currentTime - lastClickTime < 400 && Math.abs(touch.clientX - lastClickX) < 20 && Math.abs(touch.clientY - lastClickY) < 20) {
+          lastClickTime = 0;
+          resetPosition();
+          return;
+        }
+        lastClickTime = currentTime;
+        lastClickX = touch.clientX;
+        lastClickY = touch.clientY;
+        startDrag(touch.clientX, touch.clientY);
       }
     }, { passive: true });
 

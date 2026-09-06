@@ -1,6 +1,6 @@
 {
 	"contentrating" : "Everyone",
-	"description" : "A digital clock showing auto-located Islamic prayer times, Hijri calendar, and next prayer countdown.",
+	"description" : "A digital clock showing auto-located Islamic prayer times, Hijri calendar, and next prayer countdown.\r\n\r\nNote: Auto-location is fetched via https://geoip.k-aljalood.com solely to calculate prayer times. No personal data or IP addresses are stored.",
 	"file" : "index.html",
 	"general" : 
 	{
@@ -31,11 +31,35 @@
 			},
 			"bg_color" : 
 			{
-				"index" : 7,
-				"order" : 107,
+				"condition" : "bg_type.value === 'color'",
+				"index" : 8,
+				"order" : 108,
 				"text" : "Color",
 				"type" : "color",
 				"value" : "0.11 0.11 0.16"
+			},
+			"bg_type" : 
+			{
+				"index" : 7,
+				"options" : 
+				[
+					{
+						"label" : "Color",
+						"value" : "color"
+					},
+					{
+						"label" : "Image",
+						"value" : "image"
+					},
+					{
+						"label" : "Video",
+						"value" : "video"
+					}
+				],
+				"order" : 107,
+				"text" : "Background",
+				"type" : "combo",
+				"value" : "color"
 			},
 			"calculation_method" : 
 			{
@@ -100,6 +124,25 @@
 				"type" : "combo",
 				"value" : "default"
 			},
+			"custom_image" : 
+			{
+				"condition" : "bg_type.value === 'image'",
+				"index" : 9,
+				"order" : 109,
+				"text" : "Image",
+				"type" : "file",
+				"value" : ""
+			},
+			"custom_video" : 
+			{
+				"condition" : "bg_type.value === 'video'",
+				"fileType" : "video",
+				"index" : 10,
+				"order" : 110,
+				"text" : "Video",
+				"type" : "file",
+				"value" : ""
+			},
 			"hijri_offset" : 
 			{
 				"condition" : "show_hijri.value === true",
@@ -146,6 +189,22 @@
 				"type" : "bool",
 				"value" : true
 			},
+			"text_color" : 
+			{
+				"index" : 11,
+				"order" : 111,
+				"text" : "Text Color",
+				"type" : "color",
+				"value" : "1 1 1"
+			},
+			"text_shadow" : 
+			{
+				"index" : 12,
+				"order" : 112,
+				"text" : "Shadow",
+				"type" : "bool",
+				"value" : true
+			},
 			"use_12h" : 
 			{
 				"index" : 1,
@@ -173,7 +232,7 @@
 	"tags" : [ "Relaxing" ],
 	"title" : "Prayer Times & Clock",
 	"type" : "web",
-	"version" : 1,
+	"version" : 2,
 	"visibility" : "public",
 	"workshopid" : "3760221363",
 	"workshopurl" : "steam://url/CommunityFilePage/3760221363"
