@@ -231,8 +231,8 @@
 	"ratingviolence" : "none",
 	"tags" : [ "Relaxing" ],
 	"title" : "Prayer Times & Clock",
-	"type" : "web",
-	"version" : 2,
+	"type" : "Web",
+	"version" : 3,
 	"visibility" : "public",
 	"workshopid" : "3760221363",
 	"workshopurl" : "steam://url/CommunityFilePage/3760221363"

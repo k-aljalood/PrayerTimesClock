@@ -299,10 +299,10 @@
         const ummAlQura = ['SA', 'YE'];
         const gulf = ['AE', 'KW', 'QA', 'OM', 'BH'];
         const egypt = ['EG', 'SD', 'LY', 'TN', 'DZ', 'SY', 'LB', 'JO', 'PS', 'IQ', 'SO', 'DJ', 'KM', 'ER', 'TD', 'NE', 'ML', 'MR'];
-        const karachi = ['PK', 'IN', 'BD', 'AF', 'LK', 'MV', 'UZ', 'TJ', 'TM', 'KG', 'KZ'];
+        const karachi = ['PK', 'IN', 'BD', 'AF', 'UZ', 'TJ', 'TM', 'KG', 'KZ'];
         const turkey = ['TR', 'AZ', 'AL', 'BA', 'XK', 'MK', 'CY'];
         const morocco = ['MA'];
-        const jakim = ['MY', 'ID', 'SG', 'BN', 'TH', 'PH', 'VN', 'KH', 'MM', 'LA'];
+        const jakim = ['MY', 'ID', 'SG', 'BN', 'TH', 'PH', 'VN', 'KH', 'MM', 'LA', 'MV', 'LK'];
         const isna = ['US', 'CA', 'MX', 'BR', 'AR', 'CO', 'PE', 'VE', 'CL', 'EC', 'GT', 'CU', 'HT', 'DO', 'HN', 'PY', 'UY', 'PA', 'JM', 'CR', 'SV', 'NI', 'GQ', 'BS', 'BZ', 'BO', 'GY', 'SR', 'GF', 'FK'];
         const russia = ['RU', 'UA', 'BY', 'MD', 'EE', 'LV', 'LT'];
         const france = ['FR', 'LU'];
@@ -345,7 +345,7 @@
       } else if (method === 'karachi') {
         config = { type: 'karachi', fajr: 18, isha: 18, asrFactor: 2 };
       } else if (method === 'turkey') {
-        config = { type: 'turkey', fajr: 18, isha: 17, asrFactor: 2 };
+        config = { type: 'turkey', fajr: 18, isha: 17, asrFactor: 1 };
       } else if (method === 'morocco') {
         config = { type: 'morocco', fajr: 19, isha: 17, asrFactor: 1 };
       } else if (method === 'jakim') {
@@ -353,7 +353,7 @@
       } else if (method === 'isna') {
         config = { type: 'isna', fajr: 15, isha: 15, asrFactor: 1 };
       } else if (method === 'russia') {
-        config = { type: 'russia', fajr: 16, isha: 15, asrFactor: 2 };
+        config = { type: 'russia', fajr: 16, isha: 15, asrFactor: 1 };
       } else if (method === 'france') {
         config = { type: 'france', fajr: 12, isha: 12, asrFactor: 1 };
       } else if (method === 'tehran') {
